@@ -23,22 +23,23 @@ class GH:
         )
 
         workflows, workflows_count = self.listWorkflows()
-        print(f"Total workflows number: {workflows_count}")
+        if workflows_count != None:
+            print(f"Total workflows number: {workflows_count}")
 
-        clean_ids = []
+            clean_ids = []
 
-        for wf in workflows:
-            created_time = convertTime(wf["created_at"])
-            if created_time < self.expired_timestamp:
-                clean_ids.append(wf["id"])
+            for wf in workflows:
+                created_time = convertTime(wf["created_at"])
+                if created_time < self.expired_timestamp:
+                    clean_ids.append(wf["id"])
 
-        print("Plan to delete {} workflows\n".format(len(clean_ids)))
-        result = p_map(self.deleteRun, clean_ids)
-        result = list(filter(None, result))
-        if result:
-            print("\nFailed to delete these workflow runs:")
-            for r in result:
-                print("* ID {}: {}".format(r[0], r[1]))
+            print("Plan to delete {} workflows\n".format(len(clean_ids)))
+            result = p_map(self.deleteRun, clean_ids)
+            result = list(filter(None, result))
+            if result:
+                print("\nFailed to delete these workflow runs:")
+                for r in result:
+                    print("* ID {}: {}".format(r[0], r[1]))
 
         print(
             "----------------------------------- Finished -----------------------------------"
@@ -50,20 +51,24 @@ class GH:
         )
         result = getUrl(workflows_url, headers=self.headers).json()
 
-        workflows_count = result["total_count"]
-        page_num = workflows_count // 100 + 1
+        workflows_count = result.get("total_count")
+        if workflows_count == None:
+            print("Error: please check your configuration!")
+            return None, None
+        else:
+            page_num = workflows_count // 100 + 1
 
-        workflows = result["workflow_runs"]
-        for i in range(2, page_num + 1):
-            workflows_page_url = f"{workflows_url}&page={i}"
-            workflows_this_page = getUrl(
-                workflows_page_url, headers=self.headers
-            ).json()["workflow_runs"]
-            workflows += workflows_this_page
+            workflows = result["workflow_runs"]
+            for i in range(2, page_num + 1):
+                workflows_page_url = f"{workflows_url}&page={i}"
+                workflows_this_page = getUrl(
+                    workflows_page_url, headers=self.headers
+                ).json()["workflow_runs"]
+                workflows += workflows_this_page
 
-        workflows = uniqWorkflowList(workflows)
+            workflows = uniqWorkflowList(workflows)
 
-        return workflows, workflows_count
+            return workflows, workflows_count
 
     def deleteRun(self, run_id):
         delete_url = "https://api.github.com/repos/{}/{}/actions/runs/{}".format(
