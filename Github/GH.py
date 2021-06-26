@@ -6,8 +6,7 @@ from .utils import getUrl, deleteUrl, convertTime, uniqWorkflowList
 
 
 class GH:
-    def __init__(self, github_user, github_repo, github_token, expire_time):
-        self.github_user = github_user
+    def __init__(self, github_repo, github_token, expire_time):
         self.github_repo = github_repo
 
         self.headers = {
@@ -46,8 +45,8 @@ class GH:
         )
 
     def listWorkflows(self):
-        workflows_url = "https://api.github.com/repos/{}/{}/actions/runs?status=completed&per_page=100".format(
-            self.github_user, self.github_repo
+        workflows_url = "https://api.github.com/repos/{}/actions/runs?status=completed&per_page=100".format(
+            self.github_repo
         )
         result = getUrl(workflows_url, headers=self.headers).json()
 
@@ -71,8 +70,8 @@ class GH:
             return workflows, workflows_count
 
     def deleteRun(self, run_id):
-        delete_url = "https://api.github.com/repos/{}/{}/actions/runs/{}".format(
-            self.github_user, self.github_repo, run_id
+        delete_url = "https://api.github.com/repos/{}/actions/runs/{}".format(
+            self.github_repo, run_id
         )
 
         result = deleteUrl(delete_url, headers=self.headers)
